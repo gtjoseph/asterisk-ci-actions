@@ -1,15 +1,3 @@
-#
-# Workflows, like this one, that are triggered by PRs submitted
-# from forked repositories are severly limited in what they can do
-# for security reasons. For instance, they can't add or remove
-# labels or comments even on the PR that triggered them.  Since
-# we need to both of those things, GitHub recommends creating a
-# separate workflow that does those tasks that's triggered when
-# this PR workflow starts or finishes. Since that workflow isn't
-# being run in the context of a forked repo, it has all the
-# privileges needed to add and remove labels and comments.  The
-# accompanying OnPRStateChangedPriv workflow does just that.
-
 name: PRLabeled
 # WARNING!  The run name MUST start with "PR <pr_number>".
 # The accompanying privleged workflow parses this to find
@@ -17,12 +5,22 @@ name: PRLabeled
 run-name: "PR ${{ github.event.number }} Labeled by ${{ github.actor }}"
 on:
   pull_request:
-    types: [ opened,synchronize ]
+    types: [ opened,synchronize,labeled ]
 
 jobs:
+  Setup:
+    name: ${{inputs.jobname}}-Job1
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: DumpEnvironment
+        uses: asterisk/asterisk-ci-actions/DumpEnvironmentAction@main
+
   TestCalled:
     concurrency:
-      group: check-${{ github.base_ref }}-${{ github.ref_name }}
+      group: check-${{ github.triggering_actor }}-${{ github.head_ref }}
       cancel-in-progress: true
     uses: ./.github/workflows/TestCalledWorkflow.yml
     with:
